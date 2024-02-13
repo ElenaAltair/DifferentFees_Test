@@ -28,53 +28,58 @@ Cумма комиссии будет зависеть ещё и от типа �
 В случае превышения какого-либо из лимитов операция должна блокироваться.
  */
 
-val cardType = "Mastercard" // тип карты
-var amountPreviousTransfers = 200000  //сумма предыдущих переводов в этом месяце (по умолчанию 0 рублей)
-val amountTransferBeingMade = 110000    //сумма совершаемого перевода
-val transferLimitPerDay = 150000 //Максимальная сумма перевода с одной карты руб. в сутки
-val transferLimitPerMonth = 600000 // Максимальная сумма перевода с одной карты руб. в месяц
-val visaMinTransfer = 35.0
-val mastercardLimitMonth = 75000
 
+val errorTypeCard = -1.0
+val errorLimit = -2.0
 
 fun main() {
-    if (amountTransferBeingMade > transferLimitPerDay) {
-        println("Операция заблокирована. Превышен суточный лимит.")
-    } else if ((amountPreviousTransfers + amountTransferBeingMade) > transferLimitPerMonth) {
-        println("Операция заблокирована. Превышен месячный лимит.")
-    } else {
-        println(
-            "Комиссия составит " + calculatingCommission(
-                cardType,
-                amountPreviousTransfers,
-                amountTransferBeingMade
-            )
-        )
-    }
-
+    println(calculatingCommission("Mastercard", 200000, 110000))
 }
 
 fun calculatingCommission(
-    cardType: String = "Мир",
-    amountPreviousTransfers: Int = 0,
+    cardType: String,
+    amountPreviousTransfers: Int,
     amountTransferBeingMade: Int
 ): Double {
     var transfer: Double = 0.0
     when (cardType) {
-        "Mastercard" -> {
-            if (amountPreviousTransfers == 0 && amountTransferBeingMade > mastercardLimitMonth) {
-                transfer = (amountTransferBeingMade - mastercardLimitMonth) * 0.006 + 20
-            } else if (amountPreviousTransfers <= mastercardLimitMonth && (amountPreviousTransfers + amountTransferBeingMade) > mastercardLimitMonth) {
-                transfer = (amountPreviousTransfers + amountTransferBeingMade - mastercardLimitMonth) * 0.006 + 20
-            } else if (amountPreviousTransfers > mastercardLimitMonth) {
-                transfer = amountTransferBeingMade * 0.006 + 20
+        "Mastercard", "Maestro" -> {
+            if (amountTransferBeingMade <= 150000 && (amountPreviousTransfers + amountTransferBeingMade) <= 600000) {
+
+                if (amountPreviousTransfers == 0 && amountTransferBeingMade > 75000) {
+                    transfer = (amountTransferBeingMade - 75000) * 0.006 + 20
+                } else if (amountPreviousTransfers <= 75000 && (amountPreviousTransfers + amountTransferBeingMade) > 75000) {
+                    transfer = (amountPreviousTransfers + amountTransferBeingMade - 75000) * 0.006 + 20
+                } else if (amountPreviousTransfers > 75000) {
+                    transfer = amountTransferBeingMade * 0.006 + 20
+                }
+            } else {
+                transfer = errorLimit
             }
         }
 
-        "Visa" -> {
-            transfer = amountTransferBeingMade * 0.0075
-            if (transfer < visaMinTransfer) transfer = visaMinTransfer
+        "Visa", "Мир" -> {
+            if (amountTransferBeingMade <= 150000 && (amountPreviousTransfers + amountTransferBeingMade) <= 600000) {
+                transfer = amountTransferBeingMade * 0.0075
+                if (transfer < 35.0) transfer = 35.0
+            } else {
+                transfer = errorLimit
+            }
         }
+
+        "VK Pay" -> {
+            if (amountTransferBeingMade <= 15000 && (amountTransferBeingMade + amountPreviousTransfers) <= 40000) {
+                transfer = 0.0
+            } else {
+                transfer = errorLimit
+            }
+        }
+
+        else -> {
+            transfer = errorTypeCard
+        }
+
     }
     return transfer
 }
+
